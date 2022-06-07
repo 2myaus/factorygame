@@ -39,8 +39,8 @@ class Game{
                 if(Game.keys.includes(Game.Binds.Right)){
                     this.position.x += this.moveSpeed;
                 }
-                if(Game.keys.includes(Game.Binds.Inventory)){
-                    this.children[1].visible = !this.children[1].visible;
+                if(Game.keysPressed.includes(Game.Binds.Inventory)){
+                    Game.uiContainer.children[0].visible = !Game.uiContainer.children[0].visible;
                 }
                 Game.worldContainer.position.x = -this.position.x + Game.canvas.width / 2;
                 Game.worldContainer.position.y = -this.position.y + Game.canvas.width / 2;
@@ -284,6 +284,28 @@ class Game{
             }
         }
 
+        class InventoryUI extends PIXI.Graphics{
+            constructor(){
+                super();
+                this.addChild(new PIXI.Graphics());
+                this.children[0].addChild(new Square(128, 128));
+                this.children[0].addChild(new SquareMaker(128, 256));
+                this.children[0].addChild(new Piston(128, 384))
+            }
+            Update(){
+                if(Game.MBsPressed[0]){
+                    this.children[0].children.forEach(child => {
+                        if(Game.intersectpos(child.x, child.y, child.width, child.height, Game.uiContainer.mousePos.x, Game.uiContainer.mousePos.y)){
+                            let clone = new child.constructor(Game.uiContainer.mousePos.x, Game.uiContainer.mousePos.y);
+                            Game.worldContainer.addChild(clone);
+                            Game.player.draggingThing = clone;
+                            Game.player.children[1].visible = true;
+                        }
+                    });
+                }
+            }
+        }
+
 
         //Functions
 
@@ -324,6 +346,7 @@ class Game{
         document.addEventListener('keydown', function(event) {
             if(!Game.keys.includes('Control')){ //Allow ctrl key
                 event.preventDefault();
+                console.log("Prevent");
             }
             if(!Game.keys.includes(event.key)){
                 Game.keys.push(event.key);
@@ -378,6 +401,12 @@ class Game{
         Game.worldContainer.mousePos.x = 0;
         Game.worldContainer.mousePos.y = 0;
 
+        Game.uiContainer.mousePos = new Object();
+        Game.uiContainer.mousePos.x = 0;
+        Game.uiContainer.mousePos.y = 0;
+
+        Game.uiContainer.addChild(new InventoryUI());
+
         Game.grid = new GridBG();
 
         Game.worldContainer.addChild(Game.grid);
@@ -400,6 +429,9 @@ class Game{
             let mouseglobal = Game.app.renderer.plugins.interaction.mouse.global;
             Game.worldContainer.mousePos.x = mouseglobal.x - Game.worldContainer.position.x;
             Game.worldContainer.mousePos.y = mouseglobal.y - Game.worldContainer.position.y;
+
+            Game.uiContainer.mousePos.x = mouseglobal.x;
+            Game.uiContainer.mousePos.y = mouseglobal.y;
 
             Game.app.stage.children.forEach((room) => {
                 if(room.visible){
@@ -426,4 +458,3 @@ class Game{
 
 // Only executed our code once the DOM is ready.
 window.onload = Game.onceready;
-window.idAsyncInit = Game.y8setup;
