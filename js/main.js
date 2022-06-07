@@ -23,7 +23,6 @@ class Game{
 
                 this.draggingThing = null;
                 this.moveSpeed = 3;
-                this.dragPrecision = 64;
                 this.zIndex = 10;
             }
             Update(){
@@ -45,12 +44,11 @@ class Game{
                 Game.worldContainer.position.x = -this.position.x + Game.canvas.width / 2;
                 Game.worldContainer.position.y = -this.position.y + Game.canvas.width / 2;
                 if(Game.MBsPressed[0]){
-                    (Game.worldContainer.children).forEach(thing => {
-                        if(thing.moveable && Game.intersectpos(thing.position.x, thing.position.y, thing.width, thing.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
-                            this.draggingThing = thing;
-                            this.children[1].visible = true;
-                        }
-                    });
+                    let target = Game.getblock(Math.round(Game.worldContainer.mousePos.x / 64), Math.round(Game.worldContainer.mousePos.y / 64));
+                    if(target){
+                        this.draggingThing = target;
+                        this.children[1].visible = true;
+                    }
                 }
                 if(this.draggingThing != null){
                     if(Game.MBsReleased[0]){
@@ -58,18 +56,12 @@ class Game{
                         this.children[1].visible = false;
                     }
                     else{
-                        let targetx = Math.round(Game.worldContainer.mousePos.x / this.dragPrecision) * this.dragPrecision;
-                        let targety = Math.round(Game.worldContainer.mousePos.y / this.dragPrecision) * this.dragPrecision;
+                        let targetx = Math.round(Game.worldContainer.mousePos.x / 64);
+                        let targety = Math.round(Game.worldContainer.mousePos.y / 64);
 
-                        let collide = false;
-                        Game.worldContainer.children.forEach(thing => {
-                            if(thing !== this.draggingThing && thing !== Game.grid && thing !== Game.player && Game.intersect(targetx, targety, 64, 64, thing.x, thing.y, thing.width, thing.height)){
-                                collide = true;
-                            }
-                        });
+                        let collide = Game.getblock(targetx, targety);
                         if(!collide){
-                            this.draggingThing.position.x = targetx;
-                            this.draggingThing.position.y = targety;
+                            Game.moveblockto(this.draggingThing, targetx, targety);
                         }
 
                         this.children[1].clear();
@@ -126,15 +118,8 @@ class Game{
             }
             Update(dif){
                 if(this.timer >= this.spawnTime){
-                    let collide = false;
-                    Game.worldContainer.children.forEach(thing => {
-                        if(thing !== this && thing !== Game.grid && thing !== Game.player && Game.intersect(this.position.x, this.position.y - 64, 64, 64, thing.x, thing.y, thing.width, thing.height)){
-                            collide = true;
-                        }
-                    });
-                    if(!collide){
-                        this.lastGen = new Square(this.position.x, this.position.y - 64);
-                        Game.worldContainer.addChild(this.lastGen);
+                    if(!Game.getblock(this.position.x / 64, this.position.y / 64 - 1)){
+                        Game.addblock(new Square(this.position.x, this.position.y - 64));
                     }
                     this.timer = 0;
                 }
@@ -161,22 +146,17 @@ class Game{
                 this.moveable = true;
                 this.zIndex = 2;
                 this.timer = 50;
-                this.spawnTime = 100;
+                this.pushTime = 100;
                 this.pushx = 0;
-                this.pushy = -64;
+                this.pushy = -1;
                 this.targetx = 0;
-                this.targety = -64;
+                this.targety = -1;
                 this.position.x = x;
                 this.position.y = y;
             }
             Update(dif){
-                if(this.timer >= this.spawnTime){
-                    let hit = null;
-                    Game.worldContainer.children.forEach(thing => {
-                        if(thing.moveable && thing !== this && thing !== Game.grid && thing !== Game.player && Game.intersect(this.position.x + this.targetx, this.position.y + this.targety, 64, 64, thing.x, thing.y, thing.width, thing.height)){
-                            hit = thing;
-                        }
-                    });
+                if(this.timer >= this.pushTime){
+                    let hit = Game.getblock(this.position.x / 64 + this.targetx, this.position.y / 64 + this.targety);
                     if(hit){
                         this.PushThing(hit, this.pushx, this.pushy);
                     }
@@ -184,10 +164,10 @@ class Game{
                 }
                 this.timer += dif;
                 if(Game.MBsPressed[2] && Game.intersectpos(this.x, this.y, this.width, this.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
-                    if(this.targetx == 0 && this.targety == -64){
-                        this.targetx = 64;
+                    if(this.targetx == 0 && this.targety == -1){
+                        this.targetx = 1;
                         this.targety = 0;
-                        this.pushx = 64;
+                        this.pushx = 1;
                         this.pushy = 0;
                         this.children[1].clear();
                         this.children[1].beginFill(0xffffff);
@@ -199,11 +179,11 @@ class Game{
                         ]);
                         this.children[1].endFill();
                     }
-                    else if(this.targetx == 64 && this.targety == 0){
+                    else if(this.targetx == 1 && this.targety == 0){
                         this.targetx = 0;
-                        this.targety = 64;
+                        this.targety = 1;
                         this.pushx = 0;
-                        this.pushy = 64;
+                        this.pushy = 1;
                         this.children[1].clear();
                         this.children[1].beginFill(0xffffff);
                         this.children[1].drawPolygon([
@@ -214,10 +194,10 @@ class Game{
                         ]);
                         this.children[1].endFill();
                     }
-                    else if(this.targetx == 0 && this.targety == 64){
-                        this.targetx = -64;
+                    else if(this.targetx == 0 && this.targety == 1){
+                        this.targetx = -1;
                         this.targety = 0;
-                        this.pushx = -64;
+                        this.pushx = -1;
                         this.pushy = 0;
                         this.children[1].clear();
                         this.children[1].beginFill(0xffffff);
@@ -229,11 +209,11 @@ class Game{
                         ]);
                         this.children[1].endFill();
                     }
-                    else if(this.targetx == -64 && this.targety == 0){
+                    else if(this.targetx == -1 && this.targety == 0){
                         this.targetx = 0;
-                        this.targety = -64;
+                        this.targety = -1;
                         this.pushx = 0;
-                        this.pushy = -64;
+                        this.pushy = -1;
                         this.children[1].clear();
                         this.children[1].beginFill(0xffffff);
                         this.children[1].drawPolygon([
@@ -247,18 +227,12 @@ class Game{
                 }
             }
             PushThing(toPush, dx, dy){
-                let hit = null;
-                Game.worldContainer.children.forEach(thing => {
-                    if(thing !== this && thing !== Game.grid && thing !== Game.player && Game.intersect(toPush.x + this.pushx, toPush.y + this.pushy, 64, 64, thing.x, thing.y, thing.width, thing.height)){
-                        hit = thing;
-                    }
-                });
+                let hit = Game.getblock(toPush.position.x / 64 + dx, toPush.position.y / 64 + dy);
                 if((hit && hit.moveable) || !hit){
                     if(hit){
                         this.PushThing(hit, dx, dy);
                     }
-                    toPush.position.x += this.pushx;
-                    toPush.position.y += this.pushy;
+                    Game.moveblock(toPush, this.pushx, this.pushy);
                 }
             }
         }
@@ -296,8 +270,9 @@ class Game{
                 if(Game.MBsPressed[0]){
                     this.children[0].children.forEach(child => {
                         if(Game.intersectpos(child.x, child.y, child.width, child.height, Game.uiContainer.mousePos.x, Game.uiContainer.mousePos.y)){
-                            let clone = new child.constructor(Game.uiContainer.mousePos.x, Game.uiContainer.mousePos.y);
-                            Game.worldContainer.addChild(clone);
+                            let clone = new child.constructor(Math.round(Game.worldContainer.mousePos.x / 64), Math.round(Game.worldContainer.mousePos.y / 64));
+
+                            Game.addblock(clone);
                             Game.player.draggingThing = clone;
                             Game.player.children[1].visible = true;
                         }
@@ -388,6 +363,43 @@ class Game{
 
         Game.app.stage.sortableChildren = true;
 
+        Game.blocks = [];
+        
+        Game.storeblock = (x, y, block) => {
+            if(!Game.blocks[x]){
+                Game.blocks[x] = [];
+            }
+            Game.blocks[x][y] = block;
+        }
+
+        Game.getblock = (x, y) => {
+            if(Game.blocks[x]){
+                return Game.blocks[x][y];
+            }
+            return undefined;
+        }
+
+        Game.addblock = (block) => { //Position must be multiple of 64
+            Game.worldContainer.addChild(block);
+            Game.storeblock(block.x / 64, block.y / 64, block);
+        }
+
+        Game.moveblock = (block, x, y) => {
+            Game.storeblock(block.position.x / 64, block.position.y / 64, undefined);
+            block.position.x += x*64;
+            block.position.y += y*64;
+            Game.storeblock(block.position.x / 64, block.position.y / 64, block);
+        }
+
+        Game.moveblockto = (block, x, y) => {
+            Game.storeblock(block.position.x / 64, block.position.y / 64, undefined);
+            block.position.x = x*64;
+            block.position.y = y*64;
+            Game.storeblock(block.position.x / 64, block.position.y / 64, block);
+        }
+
+        Game.elapsed = 0;
+
         Game.app.stage.addChild(new PIXI.Graphics()); //World container
         Game.app.stage.addChild(new PIXI.Graphics()); //UI container
 
@@ -414,8 +426,9 @@ class Game{
         Game.player = new Player();
 
         Game.worldContainer.addChild(Game.player);
-        Game.worldContainer.addChild(new SquareMaker(0,0));
-        Game.worldContainer.addChild(new Piston(128,0));
+
+        Game.addblock(new SquareMaker(0,0));
+        Game.addblock(new Piston(128,0));
 
         Game.app.ticker.add((dif) => {
             Game.removeThingsCache = [];
@@ -432,6 +445,8 @@ class Game{
 
             Game.uiContainer.mousePos.x = mouseglobal.x;
             Game.uiContainer.mousePos.y = mouseglobal.y;
+
+            Game.elapsed += dif;
 
             Game.app.stage.children.forEach((room) => {
                 if(room.visible){
