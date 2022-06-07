@@ -1,0 +1,6 @@
+-Factory / pve game
+-Start with one block generator
+-Build fortresses and weapons
+-Collect materials to craft/automate crafting blocks, upgrades and weapons
+-32x32 blocks
+-16x16 items

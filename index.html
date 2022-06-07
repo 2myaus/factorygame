@@ -1,0 +1,26 @@
+<html>
+    <head>
+        <style>
+            body{
+                margin: 0px;
+                background-color: black;
+            }
+            #gameCanvas{
+                width: min(100vw, 100vh);
+                height: min(100vw, 100vh);
+                position:absolute;
+                left: calc(50vw - min(100vw, 100vh)/2);
+                top: calc(50vh - min(100vw, 100vh)/2);
+                display: block;
+            }
+        </style>
+        <script type="text/javascript" src="js/pixi.min.js"></script>
+
+        <script type="text/javascript" src="js/howler.js"></script>
+
+        <script type="text/javascript" src="js/main.js"></script>
+    </head>
+    <body>
+        <canvas id="gameCanvas"></canvas>
+    </body>
+</html>
