@@ -342,14 +342,16 @@ class Game{
                 this.children[2].visible = false;
                 this.children[3].visible = true;
                 if(!src){src = [];}
+                let newsrc = [...src];
+                newsrc.push(this);
                 let b1 = Game.getblock(this.position.x / 64, this.position.y / 64 - 1);
                 let b2 = Game.getblock(this.position.x / 64 + 1, this.position.y / 64);
                 let b3 = Game.getblock(this.position.x / 64, this.position.y / 64 + 1);
                 let b4 = Game.getblock(this.position.x / 64 - 1, this.position.y / 64);
-                if(b1 instanceof Conduit && !src.includes(b1)){b1.Activate([this])};
-                if(b2 instanceof Conduit && !src.includes(b2)){b2.Activate([this])};
-                if(b3 instanceof Conduit && !src.includes(b3)){b3.Activate([this])};
-                if(b4 instanceof Conduit && !src.includes(b4)){b4.Activate([this])};
+                if(b1 instanceof Conduit && !src.includes(b1)){b1.Activate(newsrc)};
+                if(b2 instanceof Conduit && !src.includes(b2)){b2.Activate(newsrc)};
+                if(b3 instanceof Conduit && !src.includes(b3)){b3.Activate(newsrc)};
+                if(b4 instanceof Conduit && !src.includes(b4)){b4.Activate(newsrc)};
             }
             Rotate(){
                 if(this.targetx == 0 && this.targety == -1){
