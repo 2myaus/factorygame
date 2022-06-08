@@ -341,6 +341,7 @@ class Game{
                 this.children[1].visible = false;
                 this.children[2].visible = false;
                 this.children[3].visible = true;
+                if(!src){src = [];}
                 let b1 = Game.getblock(this.position.x / 64, this.position.y / 64 - 1);
                 let b2 = Game.getblock(this.position.x / 64 + 1, this.position.y / 64);
                 let b3 = Game.getblock(this.position.x / 64, this.position.y / 64 + 1);
