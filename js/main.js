@@ -87,7 +87,28 @@ class Game{
                 this.children[0].endFill();
                 this.position.x = x;
                 this.position.y = y;
-                this.moveable = true;
+                this.type = "block";
+                this.zIndex = 2;
+            }
+            Update(){
+            }
+            Activate(){
+            }
+        }
+        class StickySquare extends PIXI.Graphics{
+            constructor(x, y){
+                super();
+                this.addChild(new PIXI.Graphics());
+                this.children[0].beginFill(0x000000);
+                this.children[0].drawRect(-32, -32, 64, 64);
+                this.children[0].endFill();
+                this.addChild(new PIXI.Graphics());
+                this.children[1].beginFill(0xffffff);
+                this.children[1].drawRect(-10, -20, 20, 40);
+                this.children[1].drawRect(-20, -10, 40, 20);
+                this.children[1].endFill();
+                this.position.x = x;
+                this.position.y = y;
                 this.type = "block";
                 this.zIndex = 2;
             }
@@ -103,14 +124,14 @@ class Game{
                 this.children[0].beginFill(0x000000);
                 this.children[0].drawRect(-32, -32, 64, 64);
                 this.children[0].endFill();
-                this.children[0].beginFill(0xffffff);
-                this.children[0].drawPolygon([
+                this.addChild(new PIXI.Graphics());
+                this.children[1].beginFill(0xffffff);
+                this.children[1].drawPolygon([
                     new PIXI.Point(0, -20),
                     new PIXI.Point(-15, -10),
                     new PIXI.Point(15, -10)
                 ]);
-                this.children[0].endFill();
-                this.moveable = true;
+                this.children[1].endFill();
                 this.zIndex = 2;
                 this.type = "block";
                 this.position.x = x;
@@ -139,7 +160,6 @@ class Game{
                 this.children[1].drawCircle(0, -10, 10);
                 this.children[1].endFill();
                 this.type = "block";
-                this.moveable = true;
                 this.zIndex = 2;
                 this.targetx = 0;
                 this.targety = -1;
@@ -223,7 +243,6 @@ class Game{
                 this.children[1].drawCircle(0, 0, 20);
                 this.children[1].endFill();
                 this.type = "block";
-                this.moveable = true;
                 this.zIndex = 2;
                 this.position.x = x;
                 this.position.y = y;
@@ -281,7 +300,6 @@ class Game{
                 ]);
                 this.children[1].endFill();
                 this.type = "block";
-                this.moveable = true;
                 this.zIndex = 2;
                 this.pushx = 0;
                 this.pushy = -1;
@@ -358,13 +376,7 @@ class Game{
                 }
             }
             PushThing(toPush, dx, dy){
-                let hit = Game.getblock(toPush.position.x / 64 + dx, toPush.position.y / 64 + dy);
-                if((hit && hit.moveable) || !hit){
-                    if(hit){
-                        this.PushThing(hit, dx, dy);
-                    }
-                    Game.moveblock(toPush, this.pushx, this.pushy);
-                }
+                Game.moveblock(toPush, this.pushx, this.pushy, [this]);
             }
             Activate(){
                 let hit = Game.getblock(this.position.x / 64 + this.targetx, this.position.y / 64 + this.targety);
@@ -404,6 +416,7 @@ class Game{
                 this.children[0].addChild(new Piston(128, 384));
                 this.children[0].addChild(new Detector(128, 512));
                 this.children[0].addChild(new Conduit(128, 640));
+                this.children[0].addChild(new StickySquare(128, 768));
             }
             Update(){
                 if(Game.MBsPressed[0]){
@@ -522,11 +535,77 @@ class Game{
             Game.storeblock(block.x / 64, block.y / 64, block);
         }
 
-        Game.moveblock = (block, x, y) => {
-            Game.storeblock(block.position.x / 64, block.position.y / 64, undefined);
+        Game.moveblock = (block, x, y, src) => {
+            let blockx = block.position.x / 64;
+            let blocky = block.position.y / 64;
+
+            let newsrc = [...src];
+            newsrc.push(block);
+
+            let scheduledmoves = [];
+
+            if(block instanceof StickySquare){
+                let h1 = Game.getblock(blockx - 1, blocky);
+                let h2 = Game.getblock(blockx, blocky - 1);
+                let h3 = Game.getblock(blockx + 1, blocky);
+                let h4 = Game.getblock(blockx, blocky + 1);
+                newsrc.push(h1, h2, h3, h4);
+                if(h1 && !src.includes(h1)){
+                    let hitcheck = Game.getblock(h1.position.x / 64 + x, h1.position.y / 64 + y);
+                    if(!hitcheck || !src.includes(hitcheck)){
+                        Game.moveblock(h1, x, y, [...newsrc]);
+                    }
+                    else{
+                        scheduledmoves.push(h1);
+                    }
+                }
+                if(h2 && !src.includes(h2)){
+                    let hitcheck = Game.getblock(h2.position.x / 64 + x, h2.position.y / 64 + y);
+                    if(!hitcheck || !src.includes(hitcheck)){
+                        Game.moveblock(h2, x, y, [...newsrc]);
+                    }
+                    else{
+                        scheduledmoves.push(h2);
+                    }
+                }
+                if(h3 && !src.includes(h3)){
+                    let hitcheck = Game.getblock(h3.position.x / 64 + x, h3.position.y / 64 + y);
+                    if(!hitcheck || !src.includes(hitcheck)){
+                        Game.moveblock(h3, x, y, [...newsrc]);
+                    }
+                    else{
+                        scheduledmoves.push(h3);
+                    }
+                }
+                if(h4 && !src.includes(h4)){
+                    let hitcheck = Game.getblock(h4.position.x / 64 + x, h4.position.y / 64 + y);
+                    if(!hitcheck || !src.includes(hitcheck)){
+                        Game.moveblock(h4, x, y, [...newsrc]);
+                    }
+                    else{
+                        scheduledmoves.push(h4);
+                    }
+                }
+            }
+            else{
+                let hit = Game.getblock(blockx + x, blocky + y);
+                if(hit){
+                    let hitcheck = Game.getblock(hit.position.x / 64 + x, hit.position.y / 64 + y);
+                    if(!hitcheck || !src.includes(hitcheck)){
+                        Game.moveblock(hit, x, y, [...newsrc]);
+                    }
+                    else{
+                        scheduledmoves.push(hit);
+                    }
+                }
+            }
+            Game.storeblock(blockx, blocky, undefined);
             block.position.x += x*64;
             block.position.y += y*64;
-            Game.storeblock(block.position.x / 64, block.position.y / 64, block);
+            Game.storeblock(blockx + x, blocky + y, block);
+            scheduledmoves.forEach(scheduled => {
+                Game.moveblock(scheduled, x, y, [...newsrc]);
+            });
         }
 
         Game.moveblockto = (block, x, y) => {
