@@ -467,6 +467,7 @@ class Game{
                 this.children[2].visible = true;
 
                 let b1 = Game.getblock(this.position.x / 64, this.position.y / 64 - 1);
+                if(!src){src=[]};
                 let newsrc = [...src];
                 newsrc.push(this);
                 if(b1 && !src.includes(b1)){b1.Activate([...newsrc])};
