@@ -27,16 +27,16 @@ class Game{
             }
             Update(){
                 if(Game.keys.includes(Game.Binds.Up)){
-                    this.position.y -= this.moveSpeed;
+                    this.position.y -= this.moveSpeed * Game.timescale;
                 }
                 if(Game.keys.includes(Game.Binds.Down)){
-                    this.position.y += this.moveSpeed;
+                    this.position.y += this.moveSpeed * Game.timescale;
                 }
                 if(Game.keys.includes(Game.Binds.Left)){
-                    this.position.x -= this.moveSpeed;
+                    this.position.x -= this.moveSpeed * Game.timescale;
                 }
                 if(Game.keys.includes(Game.Binds.Right)){
-                    this.position.x += this.moveSpeed;
+                    this.position.x += this.moveSpeed * Game.timescale;
                 }
                 if(Game.keysPressed.includes(Game.Binds.Inventory)){
                     Game.uiContainer.children[0].visible = !Game.uiContainer.children[0].visible;
@@ -207,7 +207,7 @@ class Game{
                 if(Game.MBsPressed[1] && Game.intersectpos(this.x, this.y, this.width, this.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
                     this.Activate();
                 }
-                if(this.activatingtimer >= this.activationtime){
+                if(this.activatingtimer >= this.activationtime / Game.timescale){
                     this.Activate([this.activatingsrc]);
                     this.activatingtimer = 0;
                     this.activatingsrc = null;
@@ -253,7 +253,7 @@ class Game{
                 if(Game.MBsPressed[1] && Game.intersectpos(this.x, this.y, this.width, this.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
                     this.Activate();
                 }
-                if(this.colored && Game.elapsed - this.lastactive > 10){
+                if(this.colored && Game.elapsed - this.lastactive > 10 / Game.timescale){
                     this.colored = false;
                     //Decolor
                     this.children[1].clear();
@@ -616,6 +616,8 @@ class Game{
         }
 
         Game.elapsed = 0;
+
+        Game.timescale = 1;
 
         Game.app.stage.addChild(new PIXI.Graphics()); //World container
         Game.app.stage.addChild(new PIXI.Graphics()); //UI container
