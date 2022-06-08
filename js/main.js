@@ -272,15 +272,15 @@ class Game{
                 this.children[1].endFill();
 
                 let b1 = Game.getblock(this.position.x / 64, this.position.y / 64 - 1);
-                let b2 = Game.getblock(this.position.x / 64 + 1, this.position.y / 64);
-                let b3 = Game.getblock(this.position.x / 64, this.position.y / 64 + 1);
-                let b4 = Game.getblock(this.position.x / 64 - 1, this.position.y / 64);
                 let newsrc = [...src];
                 newsrc.push(this);
-                if(b1 && !src.includes(b1)){b1.Activate(newsrc)};
-                if(b2 && !src.includes(b2)){b2.Activate(newsrc)};
-                if(b3 && !src.includes(b3)){b3.Activate(newsrc)};
-                if(b4 && !src.includes(b4)){b4.Activate(newsrc)};
+                if(b1 && !src.includes(b1)){b1.Activate([...newsrc])};
+                let b2 = Game.getblock(this.position.x / 64 + 1, this.position.y / 64);
+                if(b2 && !src.includes(b2)){b2.Activate([...newsrc])};
+                let b3 = Game.getblock(this.position.x / 64, this.position.y / 64 + 1);
+                if(b3 && !src.includes(b3)){b3.Activate([...newsrc])};
+                let b4 = Game.getblock(this.position.x / 64 - 1, this.position.y / 64);
+                if(b4 && !src.includes(b4)){b4.Activate([...newsrc])};
             }
         }
         class Piston extends PIXI.Graphics{
