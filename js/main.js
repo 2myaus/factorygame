@@ -18,6 +18,11 @@ class Game{
                 this.children[0].endFill();
 
                 this.addChild(new PIXI.Graphics());
+                this.children[1].beginFill(0x00ff00);
+                this.children[1].drawRect(-10, -10, 20, 20);
+                this.children[1].endFill();
+
+                this.addChild(new PIXI.Graphics());
 
                 this.type = "entity";
 
@@ -47,13 +52,13 @@ class Game{
                     let target = Game.getblock(Math.round(Game.worldContainer.mousePos.x / 64), Math.round(Game.worldContainer.mousePos.y / 64));
                     if(target){
                         this.draggingThing = target;
-                        this.children[1].visible = true;
+                        this.children[2].visible = true;
                     }
                 }
                 if(this.draggingThing != null){
                     if(Game.MBsReleased[0]){
                         this.draggingThing = null;
-                        this.children[1].visible = false;
+                        this.children[2].visible = false;
                     }
                     else{
                         let targetx = Math.round(Game.worldContainer.mousePos.x / 64);
@@ -64,16 +69,16 @@ class Game{
                             Game.moveblockto(this.draggingThing, targetx, targety);
                         }
 
-                        this.children[1].clear();
-                        this.children[1].lineStyle(8, 0xffd700);
-                        this.children[1].moveTo(0, 0);
+                        this.children[2].clear();
+                        this.children[2].lineStyle(8, 0xffd700);
+                        this.children[2].moveTo(0, 0);
                         let dragX = this.draggingThing.position.x + Game.worldContainer.position.x - Game.canvas.width / 2;
                         let dragY = this.draggingThing.position.y + Game.worldContainer.position.y - Game.canvas.width / 2;
-                        this.children[1].lineTo(dragX, dragY);
-                        this.children[1].beginFill(0xffd700);
-                        this.children[1].drawCircle(0, 0, 3);
-                        this.children[1].drawCircle(dragX, dragY, 6);
-                        this.children[1].endFill();
+                        this.children[2].lineTo(dragX, dragY);
+                        this.children[2].beginFill(0xffd700);
+                        this.children[2].drawCircle(0, 0, 3);
+                        this.children[2].drawCircle(dragX, dragY, 6);
+                        this.children[2].endFill();
                     }
                 }
             }
@@ -85,6 +90,10 @@ class Game{
                 this.children[0].beginFill(0x000000);
                 this.children[0].drawRect(-32, -32, 64, 64);
                 this.children[0].endFill();
+                this.addChild(new PIXI.Graphics());
+                this.children[1].beginFill(0xffffff);
+                this.children[1].drawRect(-10, -10, 20, 20);
+                this.children[1].endFill();
                 this.position.x = x;
                 this.position.y = y;
                 this.type = "block";
@@ -132,19 +141,133 @@ class Game{
                     new PIXI.Point(15, -10)
                 ]);
                 this.children[1].endFill();
+
+                this.addChild(new PIXI.Graphics());
+                this.children[2].beginFill(0x00ff00);
+                this.children[2].drawPolygon([
+                    new PIXI.Point(0, -20),
+                    new PIXI.Point(-15, -10),
+                    new PIXI.Point(15, -10)
+                ]);
+                this.children[2].endFill();
+                this.children[2].visible = false;
                 this.zIndex = 2;
                 this.type = "block";
                 this.position.x = x;
                 this.position.y = y;
+                this.targetx = 0;
+                this.targety = -1;
+                this.lastactive = 0;
+                this.colored = false;
             }
             Update(){
                 if(Game.MBsPressed[1] && Game.intersectpos(this.x, this.y, this.width, this.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
                     this.Activate();
                 }
+                if(Game.MBsPressed[2] && Game.intersectpos(this.x, this.y, this.width, this.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
+                    this.Rotate();
+                }
+                if(this.colored && Game.elapsed - this.lastactive > 10 / Game.timescale){
+                    this.colored = false;
+                    //Decolor
+                    this.children[1].visible = true;
+                    this.children[2].visible = false;
+                }
             }
             Activate(){
-                if(!Game.getblock(this.position.x / 64, this.position.y / 64 - 1)){
-                    Game.addblock(new Square(this.position.x, this.position.y - 64));
+                this.lastactive = Game.elapsed;
+                this.colored = true;
+                //Color
+                this.children[1].visible = false;
+                this.children[2].visible = true;
+                if(!Game.getblock(this.position.x / 64 + this.targetx, this.position.y / 64 + this.targety)){
+                    Game.addblock(new Square(this.position.x + this.targetx * 64, this.position.y + this.targety * 64));
+                }
+            }
+            Rotate(){
+                if(this.targetx == 0 && this.targety == -1){
+                    this.targetx = 1;
+                    this.targety = 0;
+                    this.children[1].clear();
+                    this.children[1].beginFill(0xffffff);
+                    this.children[1].drawPolygon([
+                        new PIXI.Point(20, 0),
+                        new PIXI.Point(10, -15),
+                        new PIXI.Point(10, 15)
+                    ]);
+                    this.children[1].endFill();
+
+                    this.children[2].clear();
+                    this.children[2].beginFill(0x00ff00);
+                    this.children[2].drawPolygon([
+                        new PIXI.Point(20, 0),
+                        new PIXI.Point(10, -15),
+                        new PIXI.Point(10, 15)
+                    ]);
+                    this.children[2].endFill();
+                }
+                else if(this.targetx == 1 && this.targety == 0){
+                    this.targetx = 0;
+                    this.targety = 1;
+                    this.children[1].clear();
+                    this.children[1].beginFill(0xffffff);
+                    this.children[1].drawPolygon([
+                        new PIXI.Point(0, 20),
+                        new PIXI.Point(-15, 10),
+                        new PIXI.Point(15, 10)
+                    ]);
+                    this.children[1].endFill();
+
+                    this.children[2].clear();
+                    this.children[2].beginFill(0x00ff00);
+                    this.children[2].drawPolygon([
+                        new PIXI.Point(0, 20),
+                        new PIXI.Point(-15, 10),
+                        new PIXI.Point(15, 10)
+                    ]);
+                    this.children[2].endFill();
+                }
+                else if(this.targetx == 0 && this.targety == 1){
+                    this.targetx = -1;
+                    this.targety = 0;
+                    this.children[1].clear();
+                    this.children[1].beginFill(0xffffff);
+                    this.children[1].drawPolygon([
+                        new PIXI.Point(-20, 0),
+                        new PIXI.Point(-10, -15),
+                        new PIXI.Point(-10, 15)
+                    ]);
+                    this.children[1].endFill();
+
+                    this.children[2].clear();
+                    this.children[2].beginFill(0x00ff00);
+                    this.children[2].drawPolygon([
+                        new PIXI.Point(-20, 0),
+                        new PIXI.Point(-10, -15),
+                        new PIXI.Point(-10, 15)
+                    ]);
+                    this.children[2].endFill();
+                }
+                else if(this.targetx == -1 && this.targety == 0){
+                    this.targetx = 0;
+                    this.targety = -1;
+                    this.children[1].clear();
+                    this.children[1].beginFill(0xffffff);
+                    this.children[1].drawPolygon([
+                        new PIXI.Point(0, -20),
+                        new PIXI.Point(-15, -10),
+                        new PIXI.Point(15, -10)
+                    ]);
+                    this.children[1].endFill();
+
+                    this.children[2].clear();
+                    this.children[2].beginFill(0x00ff00);
+                    this.children[2].drawPolygon([
+                        new PIXI.Point(0, -20),
+                        new PIXI.Point(-15, -10),
+                        new PIXI.Point(15, -10)
+                    ]);
+                    this.children[2].endFill();
                 }
             }
         }
@@ -159,6 +282,16 @@ class Game{
                 this.children[1].beginFill(0xffffff);
                 this.children[1].drawCircle(0, -10, 10);
                 this.children[1].endFill();
+                this.addChild(new PIXI.Graphics());
+                this.children[2].beginFill(0x0000ff);
+                this.children[2].drawCircle(0, -10, 10);
+                this.children[2].endFill();
+                this.children[2].visible = false;
+                this.addChild(new PIXI.Graphics());
+                this.children[3].beginFill(0xff0000);
+                this.children[3].drawCircle(0, -10, 10);
+                this.children[3].endFill();
+                this.children[3].visible = false;
                 this.type = "block";
                 this.zIndex = 2;
                 this.targetx = 0;
@@ -168,41 +301,12 @@ class Game{
                 this.activatingtimer = 0;
                 this.position.x = x;
                 this.position.y = y;
+                this.lastactive = 0;
+                this.colored = false;
             }
             Update(dif){
                 if(Game.MBsPressed[2] && Game.intersectpos(this.x, this.y, this.width, this.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
-                    if(this.targetx == 0 && this.targety == -1){
-                        this.targetx = 1;
-                        this.targety = 0;
-                        this.children[1].clear();
-                        this.children[1].beginFill(0xffffff);
-                        this.children[1].drawCircle(10, 0, 10);
-                        this.children[1].endFill();
-                    }
-                    else if(this.targetx == 1 && this.targety == 0){
-                        this.targetx = 0;
-                        this.targety = 1;
-                        this.children[1].clear();
-                        this.children[1].beginFill(0xffffff);
-                        this.children[1].drawCircle(0, 10, 10);
-                        this.children[1].endFill();
-                    }
-                    else if(this.targetx == 0 && this.targety == 1){
-                        this.targetx = -1;
-                        this.targety = 0;
-                        this.children[1].clear();
-                        this.children[1].beginFill(0xffffff);
-                        this.children[1].drawCircle(-10, 0, 10);
-                        this.children[1].endFill();
-                    }
-                    else if(this.targetx == -1 && this.targety == 0){
-                        this.targetx = 0;
-                        this.targety = -1;
-                        this.children[1].clear();
-                        this.children[1].beginFill(0xffffff);
-                        this.children[1].drawCircle(0, -10, 10);
-                        this.children[1].endFill();
-                    }
+                    this.Rotate();
                 }
                 if(Game.MBsPressed[1] && Game.intersectpos(this.x, this.y, this.width, this.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
                     this.Activate();
@@ -213,14 +317,30 @@ class Game{
                     this.activatingsrc = null;
                 }
                 if(this.activatingsrc){
+                    //Color blue
+                    this.children[2].visible = true;
+                    this.children[1].visible = false;
                     this.activatingtimer += dif;
                 }
                 let watchblock = Game.getblock(this.position.x / 64 + this.targetx, this.position.y / 64 + this.targety);
                 if(watchblock){
                     this.activatingsrc = watchblock;
                 }
+                if(this.colored && Game.elapsed - this.lastactive > 10 / Game.timescale){
+                    this.colored = false;
+                    //Decolor
+                    this.children[1].visible = true;
+                    this.children[2].visible = false;
+                    this.children[3].visible = false;
+                }
             }
             Activate(src){
+                this.lastactive = Game.elapsed;
+                this.colored = true;
+                //Color red
+                this.children[1].visible = false;
+                this.children[2].visible = false;
+                this.children[3].visible = true;
                 let b1 = Game.getblock(this.position.x / 64, this.position.y / 64 - 1);
                 let b2 = Game.getblock(this.position.x / 64 + 1, this.position.y / 64);
                 let b3 = Game.getblock(this.position.x / 64, this.position.y / 64 + 1);
@@ -229,6 +349,80 @@ class Game{
                 if(b2 instanceof Conduit && !src.includes(b2)){b2.Activate([this])};
                 if(b3 instanceof Conduit && !src.includes(b3)){b3.Activate([this])};
                 if(b4 instanceof Conduit && !src.includes(b4)){b4.Activate([this])};
+            }
+            Rotate(){
+                if(this.targetx == 0 && this.targety == -1){
+                    this.targetx = 1;
+                    this.targety = 0;
+                    this.children[1].clear();
+                    this.children[1].beginFill(0xffffff);
+                    this.children[1].drawCircle(10, 0, 10);
+                    this.children[1].endFill();
+
+                    this.children[2].clear();
+                    this.children[2].beginFill(0x0000ff);
+                    this.children[2].drawCircle(10, 0, 10);
+                    this.children[2].endFill();
+
+                    this.children[3].clear();
+                    this.children[3].beginFill(0xff0000);
+                    this.children[3].drawCircle(10, 0, 10);
+                    this.children[3].endFill();
+                }
+                else if(this.targetx == 1 && this.targety == 0){
+                    this.targetx = 0;
+                    this.targety = 1;
+                    this.children[1].clear();
+                    this.children[1].beginFill(0xffffff);
+                    this.children[1].drawCircle(0, 10, 10);
+                    this.children[1].endFill();
+                    
+                    this.children[2].clear();
+                    this.children[2].beginFill(0x0000ff);
+                    this.children[2].drawCircle(0, 10, 10);
+                    this.children[2].endFill();
+
+                    this.children[3].clear();
+                    this.children[3].beginFill(0xff0000);
+                    this.children[3].drawCircle(0, 10, 10);
+                    this.children[3].endFill();
+                }
+                else if(this.targetx == 0 && this.targety == 1){
+                    this.targetx = -1;
+                    this.targety = 0;
+                    this.children[1].clear();
+                    this.children[1].beginFill(0xffffff);
+                    this.children[1].drawCircle(-10, 0, 10);
+                    this.children[1].endFill();
+                    
+                    this.children[2].clear();
+                    this.children[2].beginFill(0x0000ff);
+                    this.children[2].drawCircle(-10, 0, 10);
+                    this.children[2].endFill();
+
+                    this.children[3].clear();
+                    this.children[3].beginFill(0xff0000);
+                    this.children[3].drawCircle(-10, 0, 10);
+                    this.children[3].endFill();
+                }
+                else if(this.targetx == -1 && this.targety == 0){
+                    this.targetx = 0;
+                    this.targety = -1;
+                    this.children[1].clear();
+                    this.children[1].beginFill(0xffffff);
+                    this.children[1].drawCircle(0, -10, 10);
+                    this.children[1].endFill();
+                    
+                    this.children[2].clear();
+                    this.children[2].beginFill(0x0000ff);
+                    this.children[2].drawCircle(0, -10, 10);
+                    this.children[2].endFill();
+
+                    this.children[3].clear();
+                    this.children[3].beginFill(0xff0000);
+                    this.children[3].drawCircle(0, -10, 10);
+                    this.children[3].endFill();
+                }
             }
         }
         class Conduit extends PIXI.Graphics{
@@ -242,6 +436,11 @@ class Game{
                 this.children[1].beginFill(0xffffff);
                 this.children[1].drawCircle(0, 0, 20);
                 this.children[1].endFill();
+                this.addChild(new PIXI.Graphics());
+                this.children[2].beginFill(0xff0000);
+                this.children[2].drawCircle(0, 0, 20);
+                this.children[2].endFill();
+                this.children[2].visible = false;
                 this.type = "block";
                 this.zIndex = 2;
                 this.position.x = x;
@@ -256,20 +455,16 @@ class Game{
                 if(this.colored && Game.elapsed - this.lastactive > 10 / Game.timescale){
                     this.colored = false;
                     //Decolor
-                    this.children[1].clear();
-                    this.children[1].beginFill(0xffffff);
-                    this.children[1].drawCircle(0, 0, 20);
-                    this.children[1].endFill();
+                    this.children[1].visible = true;
+                    this.children[2].visible = false;
                 }
             }
             Activate(src){
                 this.lastactive = Game.elapsed;
                 this.colored = true;
                 //Color
-                this.children[1].clear();
-                this.children[1].beginFill(0xff0000);
-                this.children[1].drawCircle(0, 0, 20);
-                this.children[1].endFill();
+                this.children[1].visible = false;
+                this.children[2].visible = true;
 
                 let b1 = Game.getblock(this.position.x / 64, this.position.y / 64 - 1);
                 let newsrc = [...src];
@@ -292,13 +487,19 @@ class Game{
                 this.children[0].endFill();
                 this.addChild(new PIXI.Graphics());
                 this.children[1].beginFill(0xffffff);
-                this.children[1].drawPolygon([
-                    new PIXI.Point(-15, -20),
-                    new PIXI.Point(-15, -10),
-                    new PIXI.Point(15, -10),
-                    new PIXI.Point(15, -20)
-                ]);
+                this.children[1].drawRect(-15, -20, 30, 10);
                 this.children[1].endFill();
+
+                this.addChild(new PIXI.Graphics());
+                this.children[2].beginFill(0x000000);
+                this.children[2].drawRect(-10, -96, 20, 64);
+                this.children[2].drawRect(-32, -96, 64, 20);
+                this.children[2].endFill();
+                this.children[2].beginFill(0xff0000);
+                this.children[2].drawRect(-15, -20, 30, 10)
+                this.children[2].endFill();
+                this.children[2].visible = false;
+
                 this.type = "block";
                 this.zIndex = 2;
                 this.pushx = 0;
@@ -307,81 +508,113 @@ class Game{
                 this.targety = -1;
                 this.position.x = x;
                 this.position.y = y;
+                this.lastactive = 0;
+                this.extended = false;
             }
             Update(dif){
-                if(Game.MBsPressed[2] && Game.intersectpos(this.x, this.y, this.width, this.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
-                    if(this.targetx == 0 && this.targety == -1){
-                        this.targetx = 1;
-                        this.targety = 0;
-                        this.pushx = 1;
-                        this.pushy = 0;
-                        this.children[1].clear();
-                        this.children[1].beginFill(0xffffff);
-                        this.children[1].drawPolygon([
-                            new PIXI.Point(20, -15),
-                            new PIXI.Point(10, -15),
-                            new PIXI.Point(10, 15),
-                            new PIXI.Point(20, 15)
-                        ]);
-                        this.children[1].endFill();
-                    }
-                    else if(this.targetx == 1 && this.targety == 0){
-                        this.targetx = 0;
-                        this.targety = 1;
-                        this.pushx = 0;
-                        this.pushy = 1;
-                        this.children[1].clear();
-                        this.children[1].beginFill(0xffffff);
-                        this.children[1].drawPolygon([
-                            new PIXI.Point(-15, 20),
-                            new PIXI.Point(-15, 10),
-                            new PIXI.Point(15, 10),
-                            new PIXI.Point(15, 20)
-                        ]);
-                        this.children[1].endFill();
-                    }
-                    else if(this.targetx == 0 && this.targety == 1){
-                        this.targetx = -1;
-                        this.targety = 0;
-                        this.pushx = -1;
-                        this.pushy = 0;
-                        this.children[1].clear();
-                        this.children[1].beginFill(0xffffff);
-                        this.children[1].drawPolygon([
-                            new PIXI.Point(-20, -15),
-                            new PIXI.Point(-10, -15),
-                            new PIXI.Point(-10, 15),
-                            new PIXI.Point(-20, 15)
-                        ]);
-                        this.children[1].endFill();
-                    }
-                    else if(this.targetx == -1 && this.targety == 0){
-                        this.targetx = 0;
-                        this.targety = -1;
-                        this.pushx = 0;
-                        this.pushy = -1;
-                        this.children[1].clear();
-                        this.children[1].beginFill(0xffffff);
-                        this.children[1].drawPolygon([
-                            new PIXI.Point(-15, -20),
-                            new PIXI.Point(-15, -10),
-                            new PIXI.Point(15, -10),
-                            new PIXI.Point(15, -20)
-                        ]);
-                        this.children[1].endFill();
-                    }
-                }
                 if(Game.MBsPressed[1] && Game.intersectpos(this.x, this.y, this.width, this.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
                     this.Activate();
+                }
+                if(Game.MBsPressed[2] && Game.intersectpos(this.x, this.y, this.width, this.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
+                    this.Rotate();
+                }
+                if(this.extended && Game.elapsed - this.lastactive > 10 / Game.timescale){
+                    this.extended = false;
+                    //Unextend
+                    this.children[2].visible = false;
+                    this.children[1].visible = true;
                 }
             }
             PushThing(toPush, dx, dy){
                 Game.moveblock(toPush, this.pushx, this.pushy, [this]);
             }
             Activate(){
+                this.lastactive = Game.elapsed;
+                this.extended = true;
+                //Extend
+                this.children[2].visible = true;
+                this.children[1].visible = false;
                 let hit = Game.getblock(this.position.x / 64 + this.targetx, this.position.y / 64 + this.targety);
                 if(hit){
                     this.PushThing(hit, this.pushx, this.pushy);
+                }
+            }
+            Rotate(){
+                if(this.targetx == 0 && this.targety == -1){
+                    this.targetx = 1;
+                    this.targety = 0;
+                    this.pushx = 1;
+                    this.pushy = 0;
+                    this.children[1].clear();
+                    this.children[1].beginFill(0xffffff);
+                    this.children[1].drawRect(20, -15, -10, 30)
+                    this.children[1].endFill();
+
+                    this.children[2].clear();
+                    this.children[2].beginFill(0x000000);
+                    this.children[2].drawRect(32, 10, 64, -20);
+                    this.children[2].drawRect(96, -32, -20, 64);
+                    this.children[2].endFill();
+                    this.children[2].beginFill(0xff0000);
+                    this.children[2].drawRect(20, -15, -10, 30);
+                    this.children[2].endFill();
+                }
+                else if(this.targetx == 1 && this.targety == 0){
+                    this.targetx = 0;
+                    this.targety = 1;
+                    this.pushx = 0;
+                    this.pushy = 1;
+                    this.children[1].clear();
+                    this.children[1].beginFill(0xffffff);
+                    this.children[1].drawRect(-15, 20, 30, -10);
+                    this.children[1].endFill();
+
+                    this.children[2].clear();
+                    this.children[2].beginFill(0x000000);
+                    this.children[2].drawRect(-10, 96, 20, -64);
+                    this.children[2].drawRect(-32, 96, 64, -20);
+                    this.children[2].endFill();
+                    this.children[2].beginFill(0xff0000);
+                    this.children[2].drawRect(-15, 20, 30, -10)
+                    this.children[2].endFill();
+                }
+                else if(this.targetx == 0 && this.targety == 1){
+                    this.targetx = -1;
+                    this.targety = 0;
+                    this.pushx = -1;
+                    this.pushy = 0;
+                    this.children[1].clear();
+                    this.children[1].beginFill(0xffffff);
+                    this.children[1].drawRect(-20, -15, 10, 30);
+                    this.children[1].endFill();
+
+                    this.children[2].clear();
+                    this.children[2].beginFill(0x000000);
+                    this.children[2].drawRect(-32, 10, -64, -20);
+                    this.children[2].drawRect(-96, -32, 20, 64);
+                    this.children[2].endFill();
+                    this.children[2].beginFill(0xff0000);
+                    this.children[2].drawRect(-20, -15, 10, 30);
+                    this.children[2].endFill();
+                }
+                else if(this.targetx == -1 && this.targety == 0){
+                    this.targetx = 0;
+                    this.targety = -1;
+                    this.pushx = 0;
+                    this.pushy = -1;
+                    this.children[1].clear();
+                    this.children[1].beginFill(0xffffff);
+                    this.children[1].drawRect(-15, -20, 30, 10);
+                    this.children[1].endFill();
+                    
+                    this.children[2].clear();
+                    this.children[2].beginFill(0x000000);
+                    this.children[2].drawRect(-10, -96, 20, 64);
+                    this.children[2].drawRect(-32, -96, 64, 20);
+                    this.children[2].endFill();
+                    this.children[2].beginFill(0xff0000);
+                    this.children[2].drawRect(-15, -20, 30, 10)
+                    this.children[2].endFill();
                 }
             }
         }
@@ -426,7 +659,7 @@ class Game{
 
                             Game.addblock(clone);
                             Game.player.draggingThing = clone;
-                            Game.player.children[1].visible = true;
+                            Game.player.children[2].visible = true;
                         }
                     });
                 }
