@@ -29,19 +29,26 @@ class Game{
                 this.draggingThing = null;
                 this.moveSpeed = 3;
                 this.zIndex = 10;
+                this.seat = null;
             }
             Update(){
-                if(Game.keys.includes(Game.Binds.Up)){
-                    this.position.y -= this.moveSpeed * Game.timescale;
+                if(!this.seat){
+                    if(Game.keys.includes(Game.Binds.Up)){
+                        this.position.y -= this.moveSpeed * Game.timescale;
+                    }
+                    if(Game.keys.includes(Game.Binds.Down)){
+                        this.position.y += this.moveSpeed * Game.timescale;
+                    }
+                    if(Game.keys.includes(Game.Binds.Left)){
+                        this.position.x -= this.moveSpeed * Game.timescale;
+                    }
+                    if(Game.keys.includes(Game.Binds.Right)){
+                        this.position.x += this.moveSpeed * Game.timescale;
+                    }
                 }
-                if(Game.keys.includes(Game.Binds.Down)){
-                    this.position.y += this.moveSpeed * Game.timescale;
-                }
-                if(Game.keys.includes(Game.Binds.Left)){
-                    this.position.x -= this.moveSpeed * Game.timescale;
-                }
-                if(Game.keys.includes(Game.Binds.Right)){
-                    this.position.x += this.moveSpeed * Game.timescale;
+                else{
+                    this.position.x = this.seat.position.x;
+                    this.position.y = this.seat.position.y;
                 }
                 if(Game.keysPressed.includes(Game.Binds.Inventory)){
                     Game.uiContainer.children[0].visible = !Game.uiContainer.children[0].visible;
@@ -50,13 +57,13 @@ class Game{
                 Game.worldContainer.position.y = -this.position.y + Game.canvas.width / 2;
                 if(Game.MBsPressed[0]){
                     let target = Game.getblock(Math.round(Game.worldContainer.mousePos.x / 64), Math.round(Game.worldContainer.mousePos.y / 64));
-                    if(target){
+                    if(target && target !== this.seat){
                         this.draggingThing = target;
                         this.children[2].visible = true;
                     }
                 }
                 if(this.draggingThing != null){
-                    if(Game.MBsReleased[0]){
+                    if(Game.MBsReleased[0] || (this.seat && this.draggingThing == this.seat)){
                         this.draggingThing = null;
                         this.children[2].visible = false;
                     }
@@ -282,10 +289,10 @@ class Game{
                 let b2 = Game.getblock(this.position.x / 64 + 1, this.position.y / 64);
                 let b3 = Game.getblock(this.position.x / 64, this.position.y / 64 + 1);
                 let b4 = Game.getblock(this.position.x / 64 - 1, this.position.y / 64);
-                if(b1 instanceof Conduit && !src.includes(b1)){b1.Activate(newsrc)};
-                if(b2 instanceof Conduit && !src.includes(b2)){b2.Activate(newsrc)};
-                if(b3 instanceof Conduit && !src.includes(b3)){b3.Activate(newsrc)};
-                if(b4 instanceof Conduit && !src.includes(b4)){b4.Activate(newsrc)};
+                if((b1 instanceof Conduit || b1 instanceof CrossConduit) && !src.includes(b1)){b1.Activate(newsrc)};
+                if((b2 instanceof Conduit || b2 instanceof CrossConduit) && !src.includes(b2)){b2.Activate(newsrc)};
+                if((b3 instanceof Conduit || b3 instanceof CrossConduit) && !src.includes(b3)){b3.Activate(newsrc)};
+                if((b4 instanceof Conduit || b4 instanceof CrossConduit) && !src.includes(b4)){b4.Activate(newsrc)};
             }
             Rotate(){
                 this.rotation += 3.1414 / 2; //lol
@@ -359,6 +366,110 @@ class Game{
                 if(b3 && !src.includes(b3) && !(b3 instanceof Detector)){b3.Activate([...newsrc])};
                 let b4 = Game.getblock(this.position.x / 64 - 1, this.position.y / 64);
                 if(b4 && !src.includes(b4) && !(b4 instanceof Detector)){b4.Activate([...newsrc])};
+            }
+        }
+        class CrossConduit extends PIXI.Graphics{
+            constructor(x, y){
+                super();
+                this.addChild(new PIXI.Graphics());
+                this.children[0].beginFill(0x000000);
+                this.children[0].drawRect(-32, -32, 64, 64);
+                this.children[0].endFill();
+
+                this.addChild(new PIXI.Graphics());
+                this.children[1].beginFill(0xffffff);
+                this.children[1].drawRect(-20, -5, 40, 10);
+                this.children[1].drawCircle(-20, 0, 10);
+                this.children[1].drawCircle(20, 0, 10);
+                this.children[1].endFill();
+
+                this.addChild(new PIXI.Graphics());
+                this.children[2].beginFill(0xffffff);
+                this.children[2].drawRect(-5, -20, 10, 40);
+                this.children[2].drawCircle(0, 20, 10);
+                this.children[2].drawCircle(0, -20, 10);
+                this.children[2].endFill();
+
+                this.addChild(new PIXI.Graphics());
+                this.children[3].beginFill(0xff0000);
+                this.children[3].drawRect(-20, -5, 40, 10);
+                this.children[3].drawCircle(-20, 0, 10);
+                this.children[3].drawCircle(20, 0, 10);
+                this.children[3].endFill();
+                this.children[3].visible = false;
+
+                this.addChild(new PIXI.Graphics());
+                this.children[4].beginFill(0xff0000);
+                this.children[4].drawRect(-5, -20, 10, 40);
+                this.children[4].drawCircle(0, 20, 10);
+                this.children[4].drawCircle(0, -20, 10);
+                this.children[4].endFill();
+                this.children[4].visible = false;
+
+                this.type = "block";
+                this.zIndex = 2;
+                this.position.x = x;
+                this.position.y = y;
+                this.vlastactive = 0;
+                this.vcolored = false;
+                this.hlastactive = 0;
+                this.hcolored = false;
+            }
+            Update(dif){
+                if(Game.MBsPressed[1] && Game.intersectpos(this.x, this.y, this.width, this.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
+                    this.Activate();
+                }
+                if(this.vcolored && Game.elapsed - this.vlastactive > 10 / Game.timescale){
+                    this.vcolored = false;
+                    //Decolor
+                    this.children[2].visible = true;
+                    this.children[4].visible = false;
+                }
+                if(this.hcolored && Game.elapsed - this.hlastactive > 10 / Game.timescale){
+                    this.hcolored = false;
+                    //Decolor
+                    this.children[1].visible = true;
+                    this.children[3].visible = false;
+                }
+            }
+            Activate(src){
+                if(!src){src=[]};
+                let newsrc = [...src];
+                newsrc.push(this);
+
+                let b1 = Game.getblock(this.position.x / 64, this.position.y / 64 - 1);
+                let b2 = Game.getblock(this.position.x / 64 + 1, this.position.y / 64);
+                let b3 = Game.getblock(this.position.x / 64, this.position.y / 64 + 1);
+                let b4 = Game.getblock(this.position.x / 64 - 1, this.position.y / 64);
+
+                if(b1 && !src.includes(b1) && !(b1 instanceof Detector) && src[src.length-1] == b3){
+                    b1.Activate([...newsrc]);
+                    this.vlastactive = Game.elapsed;
+                    this.vcolored = true;
+                    this.children[2].visible=false;
+                    this.children[4].visible=true;
+                }
+                if(b2 && !src.includes(b2) && !(b2 instanceof Detector) && src[src.length-1] == b4){
+                    b2.Activate([...newsrc]);
+                    this.hlastactive = Game.elapsed;
+                    this.hcolored = true;
+                    this.children[1].visible=false;
+                    this.children[3].visible=true;
+                }
+                if(b3 && !src.includes(b3) && !(b3 instanceof Detector) && src[src.length-1] == b1){
+                    b3.Activate([...newsrc]);
+                    this.vlastactive = Game.elapsed;
+                    this.vcolored = true;
+                    this.children[2].visible=false;
+                    this.children[4].visible=true;
+                }
+                if(b4 && !src.includes(b4) && !(b4 instanceof Detector) && src[src.length-1] == b2){
+                    b4.Activate([...newsrc]);
+                    this.hlastactive = Game.elapsed;
+                    this.hcolored = true;
+                    this.children[1].visible=false;
+                    this.children[3].visible=true;
+                }
             }
         }
         class Piston extends PIXI.Graphics{
@@ -568,6 +679,137 @@ class Game{
                 }
             }
         }
+        class PullPiston extends PIXI.Graphics{
+            constructor(x, y){
+                super();
+                this.addChild(new PIXI.Graphics());
+                this.children[0].beginFill(0x000000);
+                this.children[0].drawRect(-32, -32, 64, 64);
+                this.children[0].endFill();
+                this.addChild(new PIXI.Graphics());
+                this.children[1].beginFill(0xffffff);
+                this.children[1].drawRect(-15, 20, 30, -10);
+                this.children[1].drawPolygon([
+                    new PIXI.Point(0, 20),
+                    new PIXI.Point(-15, 0),
+                    new PIXI.Point(15, 0)
+                ]);
+                this.children[1].endFill();
+
+                this.addChild(new PIXI.Graphics());
+                this.children[2].beginFill(0x00ff00);
+                this.children[2].drawRect(-15, 20, 30, -10);
+                this.children[2].drawPolygon([
+                    new PIXI.Point(0, 20),
+                    new PIXI.Point(-15, 0),
+                    new PIXI.Point(15, 0)
+                ]);
+                this.children[2].endFill();
+                this.children[2].visible = false;
+
+                this.type = "block";
+                this.zIndex = 2;
+                this.pushx = 0;
+                this.pushy = 1;
+                this.targetx = 0;
+                this.targety = -2;
+                this.position.x = x;
+                this.position.y = y;
+                this.lastactive = 0;
+                this.extended = false;
+            }
+            Update(dif){
+                if(Game.MBsPressed[1] && Game.intersectpos(this.x, this.y, this.width, this.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
+                    this.Activate();
+                }
+                if(Game.MBsPressed[2] && Game.intersectpos(this.x, this.y, this.width, this.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
+                    this.Rotate();
+                }
+                if(this.extended && Game.elapsed - this.lastactive > 10 / Game.timescale){
+                    this.extended = false;
+                    //Unextend
+                    this.children[2].visible = false;
+                    this.children[1].visible = true;
+                }
+            }
+            PushThing(toPush, dx, dy){
+                Game.moveblock(toPush, this.pushx, this.pushy, [this]);
+            }
+            Activate(){
+                this.lastactive = Game.elapsed;
+                this.extended = true;
+                //Extend
+                this.children[2].visible = true;
+                this.children[1].visible = false;
+                let hit = Game.getblock(this.position.x / 64 + this.targetx, this.position.y / 64 + this.targety);
+                let hit2 = Game.getblock(this.position.x / 64 + this.targetx / 2, this.position.y / 64 + this.targety / 2);
+                if(hit && !hit2){
+                    this.PushThing(hit, this.pushx, this.pushy);
+                }
+            }
+            Rotate(){
+                this.rotation += 3.1414 / 2; //lol
+                if(this.targetx == 0 && this.targety == -2){
+                    this.targetx = 2;
+                    this.targety = 0;
+                    this.pushx = -1;
+                    this.pushy = 0;
+                }
+                else if(this.targetx == 2 && this.targety == 0){
+                    this.targetx = 0;
+                    this.targety = 2;
+                    this.pushx = 0;
+                    this.pushy = -1;
+                }
+                else if(this.targetx == 0 && this.targety == 2){
+                    this.targetx = -2;
+                    this.targety = 0;
+                    this.pushx = 1;
+                    this.pushy = 0;
+                }
+                else if(this.targetx == -2 && this.targety == 0){
+                    this.targetx = 0;
+                    this.targety = -2;
+                    this.pushx = 0;
+                    this.pushy = 1;
+                }
+            }
+        }
+        class Seat extends PIXI.Graphics{
+            constructor(x, y){
+                super();
+                this.addChild(new PIXI.Graphics());
+                this.children[0].beginFill(0x000000);
+                this.children[0].drawRect(-32, -32, 64, 64);
+                this.children[0].endFill();
+                this.addChild(new PIXI.Graphics());
+                this.children[1].beginFill(0xffffff);
+                this.children[1].drawCircle(-10, 0, 10);
+                this.children[1].drawCircle(10, 0, 10);
+                this.children[1].endFill();
+                this.position.x = x;
+                this.position.y = y;
+                this.type = "block";
+                this.zIndex = 2;
+                this.seated = false;
+            }
+            Update(){
+                if(Game.MBsPressed[2] && Game.intersectpos(this.x, this.y, this.width, this.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
+                    this.Activate();
+                }
+                if(Game.MBsPressed[1] && Game.intersectpos(this.x, this.y, this.width, this.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
+                    this.Activate();
+                }
+            }
+            Activate(){
+                if(Game.player.seat == this){
+                    Game.player.seat = null;
+                }
+                else{
+                    Game.player.seat = this;
+                }
+            }
+        }
 
         class InventoryUI extends PIXI.Graphics{
             constructor(){
@@ -580,9 +822,12 @@ class Game{
                 this.children[0].addChild(new Conduit(128, 640));
                 this.children[0].addChild(new StickySquare(128, 768));
                 this.children[0].addChild(new Eater(128, 896));
+                this.children[0].addChild(new PullPiston(256, 128));
+                this.children[0].addChild(new CrossConduit(256, 256));
+                this.children[0].addChild(new Seat(256, 384));
             }
             Update(){
-                if(Game.MBsPressed[0]){
+                if(this.visible && Game.MBsPressed[0] && !Game.getblock(Math.round(Game.worldContainer.mousePos.x / 64), Math.round(Game.worldContainer.mousePos.y / 64))){
                     this.children[0].children.forEach(child => {
                         if(Game.intersectpos(child.x, child.y, child.width, child.height, Game.uiContainer.mousePos.x, Game.uiContainer.mousePos.y)){
                             let clone = new child.constructor(Math.round(Game.worldContainer.mousePos.x / 64) * 64, Math.round(Game.worldContainer.mousePos.y / 64) * 64);
@@ -726,7 +971,7 @@ class Game{
                 newsrc.push(h1, h2, h3, h4);
                 if(h1 && !src.includes(h1)){
                     let hitcheck = Game.getblock(h1.position.x / 64 + x, h1.position.y / 64 + y);
-                    if(!hitcheck || !src.includes(hitcheck)){
+                    if(!hitcheck || !newsrc.includes(hitcheck)){
                         Game.moveblock(h1, x, y, [...newsrc]);
                     }
                     else{
@@ -735,7 +980,7 @@ class Game{
                 }
                 if(h2 && !src.includes(h2)){
                     let hitcheck = Game.getblock(h2.position.x / 64 + x, h2.position.y / 64 + y);
-                    if(!hitcheck || !src.includes(hitcheck)){
+                    if(!hitcheck || !newsrc.includes(hitcheck)){
                         Game.moveblock(h2, x, y, [...newsrc]);
                     }
                     else{
@@ -744,7 +989,7 @@ class Game{
                 }
                 if(h3 && !src.includes(h3)){
                     let hitcheck = Game.getblock(h3.position.x / 64 + x, h3.position.y / 64 + y);
-                    if(!hitcheck || !src.includes(hitcheck)){
+                    if(!hitcheck || !newsrc.includes(hitcheck)){
                         Game.moveblock(h3, x, y, [...newsrc]);
                     }
                     else{
@@ -753,7 +998,7 @@ class Game{
                 }
                 if(h4 && !src.includes(h4)){
                     let hitcheck = Game.getblock(h4.position.x / 64 + x, h4.position.y / 64 + y);
-                    if(!hitcheck || !src.includes(hitcheck)){
+                    if(!hitcheck || !newsrc.includes(hitcheck)){
                         Game.moveblock(h4, x, y, [...newsrc]);
                     }
                     else{
