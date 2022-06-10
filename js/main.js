@@ -34,16 +34,16 @@ class Game{
             Update(){
                 if(!this.seat){
                     if(Game.keys.includes(Game.Binds.Up)){
-                        this.position.y -= this.moveSpeed * Game.timescale;
+                        this.position.y -= this.moveSpeed;
                     }
                     if(Game.keys.includes(Game.Binds.Down)){
-                        this.position.y += this.moveSpeed * Game.timescale;
+                        this.position.y += this.moveSpeed;
                     }
                     if(Game.keys.includes(Game.Binds.Left)){
-                        this.position.x -= this.moveSpeed * Game.timescale;
+                        this.position.x -= this.moveSpeed;
                     }
                     if(Game.keys.includes(Game.Binds.Right)){
-                        this.position.x += this.moveSpeed * Game.timescale;
+                        this.position.x += this.moveSpeed;
                     }
                 }
                 else{
@@ -108,6 +108,8 @@ class Game{
             }
             Update(){
             }
+            BlockUpdate(){
+            }
             Activate(){
             }
         }
@@ -129,6 +131,8 @@ class Game{
                 this.zIndex = 2;
             }
             Update(){
+            }
+            BlockUpdate(){
             }
             Activate(){
             }
@@ -164,25 +168,33 @@ class Game{
                 this.position.y = y;
                 this.targetx = 0;
                 this.targety = -1;
-                this.lastactive = 0;
+                this.litTime = 0;
                 this.colored = false;
+                this.wasActivated = false;
             }
             Update(){
                 if(Game.MBsPressed[1] && Game.intersectpos(this.x, this.y, this.width, this.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
-                    this.Activate();
+                    this.wasActivated = true;
                 }
                 if(Game.MBsPressed[2] && Game.intersectpos(this.x, this.y, this.width, this.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
                     this.Rotate();
                 }
-                if(this.colored && Game.elapsed - this.lastactive > 10 / Game.timescale){
+            }
+            BlockUpdate(){
+                if(this.wasActivated){
+                    this.Activate();
+                    this.wasActivated = false;
+                }
+                if(this.colored && this.litTime > 3){
                     this.colored = false;
                     //Decolor
                     this.children[1].visible = true;
                     this.children[2].visible = false;
                 }
+                this.litTime++;
             }
             Activate(){
-                this.lastactive = Game.elapsed;
+                this.litTime = 0;
                 this.colored = true;
                 //Color
                 this.children[1].visible = false;
@@ -237,21 +249,28 @@ class Game{
                 this.targetx = 0;
                 this.targety = -1;
                 this.activatingsrc = null;
-                this.activationtime = 50;
+                this.activationtime = 15;
                 this.activatingtimer = 0;
                 this.position.x = x;
                 this.position.y = y;
-                this.lastactive = 0;
+                this.litTime = 0;
                 this.colored = false;
+                this.wasActivated = false;
             }
             Update(dif){
                 if(Game.MBsPressed[2] && Game.intersectpos(this.x, this.y, this.width, this.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
                     this.Rotate();
                 }
                 if(Game.MBsPressed[1] && Game.intersectpos(this.x, this.y, this.width, this.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
-                    this.Activate();
+                    this.wasActivated = true;
                 }
-                if(this.activatingtimer >= this.activationtime / Game.timescale){
+            }
+            BlockUpdate(){
+                if(this.wasActivated){
+                    this.Activate();
+                    this.wasActivated = false;
+                }
+                if(this.activatingtimer >= this.activationtime){
                     this.Activate([this.activatingsrc]);
                     this.activatingtimer = 0;
                     this.activatingsrc = null;
@@ -260,121 +279,23 @@ class Game{
                     //Color blue
                     this.children[2].visible = true;
                     this.children[1].visible = false;
-                    this.activatingtimer += dif;
+                    this.activatingtimer++;
                 }
                 let watchblock = Game.getblock(this.position.x / 64 + this.targetx, this.position.y / 64 + this.targety);
                 if(watchblock){
                     this.activatingsrc = watchblock;
                 }
-                if(this.colored && Game.elapsed - this.lastactive > 10 / Game.timescale){
+                if(this.colored && this.litTime > 3){
                     this.colored = false;
                     //Decolor
                     this.children[1].visible = true;
                     this.children[2].visible = false;
                     this.children[3].visible = false;
                 }
+                this.litTime++;
             }
             Activate(src){
-                this.lastactive = Game.elapsed;
-                this.colored = true;
-                //Color red
-                this.children[1].visible = false;
-                this.children[2].visible = false;
-                this.children[3].visible = true;
-                if(!src){src = [];}
-                //let newsrc = [...src];
-                let newsrc = [];
-                newsrc.push(this);
-                let b1 = Game.getblock(this.position.x / 64, this.position.y / 64 - 1);
-                let b2 = Game.getblock(this.position.x / 64 + 1, this.position.y / 64);
-                let b3 = Game.getblock(this.position.x / 64, this.position.y / 64 + 1);
-                let b4 = Game.getblock(this.position.x / 64 - 1, this.position.y / 64);
-                if((b1 instanceof Conduit || b1 instanceof CrossConduit) && !src.includes(b1)){b1.Activate(newsrc)};
-                if((b2 instanceof Conduit || b2 instanceof CrossConduit) && !src.includes(b2)){b2.Activate(newsrc)};
-                if((b3 instanceof Conduit || b3 instanceof CrossConduit) && !src.includes(b3)){b3.Activate(newsrc)};
-                if((b4 instanceof Conduit || b4 instanceof CrossConduit) && !src.includes(b4)){b4.Activate(newsrc)};
-            }
-            Rotate(){
-                this.rotation += 3.1414 / 2; //lol
-                if(this.targetx == 0 && this.targety == -1){
-                    this.targetx = 1;
-                    this.targety = 0;
-                }
-                else if(this.targetx == 1 && this.targety == 0){
-                    this.targetx = 0;
-                    this.targety = 1;
-                }
-                else if(this.targetx == 0 && this.targety == 1){
-                    this.targetx = -1;
-                    this.targety = 0;
-                }
-                else if(this.targetx == -1 && this.targety == 0){
-                    this.targetx = 0;
-                    this.targety = -1;
-                }
-            }
-        }
-        class InstantDetector extends PIXI.Graphics{
-            constructor(x, y){
-                super();
-                this.addChild(new PIXI.Graphics());
-                this.children[0].beginFill(0x000000);
-                this.children[0].drawRect(-32, -32, 64, 64);
-                this.children[0].endFill();
-                this.addChild(new PIXI.Graphics());
-                this.children[1].beginFill(0xffffff);
-                this.children[1].drawCircle(0, -10, 15);
-                this.children[1].drawCircle(0, 10, 10);
-                this.children[1].endFill();
-                this.addChild(new PIXI.Graphics());
-                this.children[2].beginFill(0x0000ff);
-                this.children[2].drawCircle(0, -10, 15);
-                this.children[2].drawCircle(0, 10, 10);
-                this.children[2].endFill();
-                this.children[2].visible = false;
-                this.addChild(new PIXI.Graphics());
-                this.children[3].beginFill(0xff0000);
-                this.children[3].drawCircle(0, -10, 15);
-                this.children[3].drawCircle(0, 10, 10);
-                this.children[3].endFill();
-                this.children[3].visible = false;
-                this.type = "block";
-                this.zIndex = 2;
-                this.targetx = 0;
-                this.targety = -1;
-                this.position.x = x;
-                this.position.y = y;
-                this.lastactive = 0;
-                this.colored = false;
-                this.lastwatchblock = null;
-                this.activateWith = null;
-            }
-            Update(dif){
-                if(this.activateWith){
-                    this.Activate(this.activateWith);
-                    this.activateWith = null;
-                }
-                if(Game.MBsPressed[2] && Game.intersectpos(this.x, this.y, this.width, this.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
-                    this.Rotate();
-                }
-                if(Game.MBsPressed[1] && Game.intersectpos(this.x, this.y, this.width, this.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
-                    this.Activate();
-                }
-                let watchblock = Game.getblock(this.position.x / 64 + this.targetx, this.position.y / 64 + this.targety);
-                if(watchblock && this.lastwatchblock != watchblock){
-                    this.activateWith = [watchblock];
-                }
-                if(this.colored && Game.elapsed - this.lastactive > 10 / Game.timescale){
-                    this.colored = false;
-                    //Decolor
-                    this.children[1].visible = true;
-                    this.children[2].visible = false;
-                    this.children[3].visible = false;
-                }
-                this.lastwatchblock = watchblock;
-            }
-            Activate(src){
-                this.lastactive = Game.elapsed;
+                this.litTime = 0;
                 this.colored = true;
                 //Color red
                 this.children[1].visible = false;
@@ -435,20 +356,29 @@ class Game{
                 this.position.y = y;
                 this.lastactive = 0;
                 this.colored = false;
+                this.wasActivated = false;
+                this.litTime = 0;
             }
             Update(dif){
                 if(Game.MBsPressed[1] && Game.intersectpos(this.x, this.y, this.width, this.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
-                    this.Activate();
+                    this.wasActivated = true;
                 }
-                if(this.colored && Game.elapsed - this.lastactive > 10 / Game.timescale){
+            }
+            BlockUpdate(){
+                if(this.wasActivated){
+                    this.Activate();
+                    this.wasActivated = false;
+                }
+                if(this.colored && this.litTime > 3){
                     this.colored = false;
                     //Decolor
                     this.children[1].visible = true;
                     this.children[2].visible = false;
                 }
+                this.litTime++;
             }
             Activate(src){
-                this.lastactive = Game.elapsed;
+                this.litTime = 0;
                 this.colored = true;
                 //Color
                 this.children[1].visible = false;
@@ -509,27 +439,28 @@ class Game{
                 this.zIndex = 2;
                 this.position.x = x;
                 this.position.y = y;
-                this.vlastactive = 0;
+                this.vlitTime = 0;
                 this.vcolored = false;
-                this.hlastactive = 0;
+                this.hlitTime = 0;
                 this.hcolored = false;
             }
             Update(dif){
-                if(Game.MBsPressed[1] && Game.intersectpos(this.x, this.y, this.width, this.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
-                    this.Activate();
-                }
-                if(this.vcolored && Game.elapsed - this.vlastactive > 10 / Game.timescale){
+            }
+            BlockUpdate(){
+                if(this.vcolored && this.vlitTime > 3){
                     this.vcolored = false;
                     //Decolor
                     this.children[2].visible = true;
                     this.children[4].visible = false;
                 }
-                if(this.hcolored && Game.elapsed - this.hlastactive > 10 / Game.timescale){
+                if(this.hcolored && this.hlitTime > 3){
                     this.hcolored = false;
                     //Decolor
                     this.children[1].visible = true;
                     this.children[3].visible = false;
                 }
+                this.vlitTime++;
+                this.hlitTime++;
             }
             Activate(src){
                 if(!src){src=[]};
@@ -543,28 +474,28 @@ class Game{
 
                 if(b1 && !src.includes(b1) && !(b1 instanceof Detector) && src[src.length-1] == b3){
                     b1.Activate([...newsrc]);
-                    this.vlastactive = Game.elapsed;
+                    this.vlitTime = 0;
                     this.vcolored = true;
                     this.children[2].visible=false;
                     this.children[4].visible=true;
                 }
                 if(b2 && !src.includes(b2) && !(b2 instanceof Detector) && src[src.length-1] == b4){
                     b2.Activate([...newsrc]);
-                    this.hlastactive = Game.elapsed;
+                    this.hlitTime = 0;
                     this.hcolored = true;
                     this.children[1].visible=false;
                     this.children[3].visible=true;
                 }
                 if(b3 && !src.includes(b3) && !(b3 instanceof Detector) && src[src.length-1] == b1){
                     b3.Activate([...newsrc]);
-                    this.vlastactive = Game.elapsed;
+                    this.vlitTime = 0;
                     this.vcolored = true;
                     this.children[2].visible=false;
                     this.children[4].visible=true;
                 }
                 if(b4 && !src.includes(b4) && !(b4 instanceof Detector) && src[src.length-1] == b2){
                     b4.Activate([...newsrc]);
-                    this.hlastactive = Game.elapsed;
+                    this.hlitTime = 0;
                     this.hcolored = true;
                     this.children[1].visible=false;
                     this.children[3].visible=true;
@@ -601,28 +532,36 @@ class Game{
                 this.targety = -1;
                 this.position.x = x;
                 this.position.y = y;
-                this.lastactive = 0;
+                this.onTime = 0;
                 this.extended = false;
+                this.wasActivated = false;
             }
             Update(dif){
                 if(Game.MBsPressed[1] && Game.intersectpos(this.x, this.y, this.width, this.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
-                    this.Activate();
+                    this.wasActivated = true;
                 }
                 if(Game.MBsPressed[2] && Game.intersectpos(this.x, this.y, this.width, this.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
                     this.Rotate();
                 }
-                if(this.extended && Game.elapsed - this.lastactive > 10 / Game.timescale){
+            }
+            BlockUpdate(dif){
+                if(this.wasActivated){
+                    this.Activate();
+                    this.wasActivated = false;
+                }
+                if(this.extended && this.onTime > 3){
                     this.extended = false;
                     //Unextend
                     this.children[2].visible = false;
                     this.children[1].visible = true;
                 }
+                this.onTime++;
             }
             PushThing(toPush, dx, dy){
                 Game.moveblock(toPush, this.pushx, this.pushy, [this]);
             }
             Activate(){
-                this.lastactive = Game.elapsed;
+                this.onTime = 0;
                 this.extended = true;
                 //Extend
                 this.children[2].visible = true;
@@ -720,33 +659,39 @@ class Game{
                 this.targety = -1;
                 this.position.x = x;
                 this.position.y = y;
-                this.lastactive = 0;
+                this.litTime = 0;
                 this.extended = false;
-
-                this.eatables = [Square.name];
+                this.wasActivated = false
             }
             Update(dif){
                 if(Game.MBsPressed[1] && Game.intersectpos(this.x, this.y, this.width, this.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
-                    this.Activate();
+                    this.wasActivated = true;
                 }
                 if(Game.MBsPressed[2] && Game.intersectpos(this.x, this.y, this.width, this.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
                     this.Rotate();
                 }
-                if(this.extended && Game.elapsed - this.lastactive > 10 / Game.timescale){
+            }
+            BlockUpdate(){
+                if(this.wasActivated){
+                    this.Activate();
+                    this.wasActivated = false;
+                }
+                if(this.extended && this.litTime > 3){
                     this.extended = false;
                     //Unextend
                     this.children[2].visible = false;
                     this.children[1].visible = true;
                 }
+                this.litTime++;
             }
             Activate(){
-                this.lastactive = Game.elapsed;
+                this.litTime = 0;
                 this.extended = true;
                 //Extend
                 this.children[2].visible = true;
                 this.children[1].visible = false;
                 let hit = Game.getblock(this.position.x / 64 + this.targetx, this.position.y / 64 + this.targety);
-                if(hit && this.eatables.includes(hit.constructor.name)){
+                if(hit){
                     Game.rmblock(hit);
                 }
             }
@@ -814,28 +759,36 @@ class Game{
                 this.targety = -2;
                 this.position.x = x;
                 this.position.y = y;
-                this.lastactive = 0;
+                this.onTime = 0;
                 this.extended = false;
+                this.wasActivated = false;
             }
             Update(dif){
                 if(Game.MBsPressed[1] && Game.intersectpos(this.x, this.y, this.width, this.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
-                    this.Activate();
+                    this.wasActivated = true;
                 }
                 if(Game.MBsPressed[2] && Game.intersectpos(this.x, this.y, this.width, this.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
                     this.Rotate();
                 }
-                if(this.extended && Game.elapsed - this.lastactive > 10 / Game.timescale){
+            }
+            BlockUpdate(){
+                if(this.wasActivated){
+                    this.Activate();
+                    this.wasActivated = false;
+                }
+                if(this.extended && this.onTime > 3){
                     this.extended = false;
                     //Unextend
                     this.children[2].visible = false;
                     this.children[1].visible = true;
                 }
+                this.onTime++;
             }
             PushThing(toPush, dx, dy){
                 Game.moveblock(toPush, this.pushx, this.pushy, [this]);
             }
             Activate(){
-                this.lastactive = Game.elapsed;
+                this.onTime = 0;
                 this.extended = true;
                 //Extend
                 this.children[2].visible = true;
@@ -900,6 +853,7 @@ class Game{
                     this.Activate();
                 }
             }
+            BlockUpdate(){}
             Activate(){
                 if(Game.player.seat == this){
                     Game.player.seat = null;
@@ -935,7 +889,7 @@ class Game{
                 this.zIndex = 2;
                 this.position.x = x;
                 this.position.y = y;
-                this.lastactive = 0;
+                this.litTime = 0;
                 this.colored = false;
 
                 this.activationtime = 25;
@@ -943,10 +897,9 @@ class Game{
                 this.activatingsrc = null;
             }
             Update(dif){
-                if(Game.MBsPressed[1] && Game.intersectpos(this.x, this.y, this.width, this.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
-                    this.Activate();
-                }
-                if(this.colored && Game.elapsed - this.lastactive > 10 / Game.timescale){
+            }
+            BlockUpdate(){
+                if(this.colored && Game.frames - this.litTime > 3){
                     this.colored = false;
                     //Decolor
                     this.children[1].visible = true;
@@ -959,16 +912,17 @@ class Game{
                         this.activatingtimer = 0;
                     }
                     else{
-                        this.activatingtimer += dif;
+                        this.activatingtimer++;
                     }
                 }
+                this.litTime++;
             }
             Activate(src){
                 this.activatingtimer = 0;
                 this.activatingsrc = src;
             }
             TrueActivate(src){
-                this.lastactive = Game.elapsed;
+                this.litTime = 0;
                 this.colored = true;
                 //Color
                 this.children[1].visible = false;
@@ -1028,22 +982,30 @@ class Game{
                 this.activatingtimer = 0;
                 this.position.x = x;
                 this.position.y = y;
-                this.lastactive = 0;
+                this.litTime = 0;
                 this.colored = false;
+                this.wasActivated = false;
             }
             Update(dif){
                 if(Game.MBsPressed[2] && Game.intersectpos(this.x, this.y, this.width, this.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
                     this.Rotate();
                 }
                 if(Game.MBsPressed[1] && Game.intersectpos(this.x, this.y, this.width, this.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
-                    this.Activate();
+                    this.wasActivated = true;
                 }
-                if(this.colored && Game.elapsed - this.lastactive > 10 / Game.timescale){
+            }
+            BlockUpdate(){
+                if(this.wasActivated){
+                    this.Activate();
+                    this.wasActivated = false;
+                }
+                if(this.colored && this.litTime > 3){
                     this.colored = false;
                     //Decolor
                     this.children[1].visible = true;
                     this.children[2].visible = false;
                 }
+                this.litTime++
             }
             Activate(src){
                 //Color red
@@ -1057,10 +1019,126 @@ class Game{
                     if(b2){
                         b2.Activate(newsrc);
                     }
-                    this.lastactive = Game.elapsed;
+                    this.litTime = 0;
                     this.colored = true;
                     this.children[1].visible = false;
                     this.children[2].visible = true;
+                }
+            }
+            Rotate(){
+                this.rotation += 3.1414 / 2; //lol
+                if(this.targetx == 0 && this.targety == -1){
+                    this.targetx = 1;
+                    this.targety = 0;
+                }
+                else if(this.targetx == 1 && this.targety == 0){
+                    this.targetx = 0;
+                    this.targety = 1;
+                }
+                else if(this.targetx == 0 && this.targety == 1){
+                    this.targetx = -1;
+                    this.targety = 0;
+                }
+                else if(this.targetx == -1 && this.targety == 0){
+                    this.targetx = 0;
+                    this.targety = -1;
+                }
+            }
+        }
+        class NotDiode extends PIXI.Graphics{
+            constructor(x, y){
+                super();
+                this.addChild(new PIXI.Graphics());
+                this.children[0].beginFill(0x000000);
+                this.children[0].drawRect(-32, -32, 64, 64);
+                this.children[0].endFill();
+                this.addChild(new PIXI.Graphics());
+                this.children[1].beginFill(0xffffff);
+                this.children[1].drawPolygon(
+                    new PIXI.Point(-5, -20),
+                    new PIXI.Point(-5, 15),
+                    new PIXI.Point(-15, 15),
+                    new PIXI.Point(0, 25),
+                    new PIXI.Point(15, 15),
+                    new PIXI.Point(5, 15),
+                    new PIXI.Point(5, -20)
+                );
+                this.children[1].endFill();
+
+                this.children[1].beginFill(0xff0000);
+                this.children[1].drawCircle(-16, 0, 8);
+                this.children[1].endFill();
+
+                this.addChild(new PIXI.Graphics());
+                this.children[2].beginFill(0xff0000);
+                this.children[2].drawPolygon(
+                    new PIXI.Point(-5, -20),
+                    new PIXI.Point(-5, 15),
+                    new PIXI.Point(-15, 15),
+                    new PIXI.Point(0, 25),
+                    new PIXI.Point(15, 15),
+                    new PIXI.Point(5, 15),
+                    new PIXI.Point(5, -20)
+                );
+                this.children[2].endFill();
+                this.children[2].visible = false;
+                this.type = "block";
+                this.zIndex = 2;
+                this.targetx = 0;
+                this.targety = -1;
+                this.activatingsrc = null;
+                this.activationtime = 50;
+                this.activatingtimer = 0;
+                this.position.x = x;
+                this.position.y = y;
+                this.litTime = 0;
+                this.colored = false;
+                this.Activated = false;
+                this.wasActivated = false;
+            }
+            Update(dif){
+                if(Game.MBsPressed[2] && Game.intersectpos(this.x, this.y, this.width, this.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
+                    this.Rotate();
+                }
+                if(Game.MBsPressed[1] && Game.intersectpos(this.x, this.y, this.width, this.height, Game.worldContainer.mousePos.x, Game.worldContainer.mousePos.y)){
+                    this.wasActivated = true;
+                }
+            }
+            BlockUpdate(){
+                if(this.wasActivated){
+                    this.Activate();
+                    this.wasActivated = false;
+                }
+                if(this.colored && this.litTime > 3){
+                    this.colored = false;
+                    //Decolor
+                    this.children[1].visible = true;
+                    this.children[2].visible = false;
+                }
+                if(!this.Activated){
+                    let b2 = Game.getblock(this.position.x / 64 - this.targetx, this.position.y / 64 - this.targety);
+                    if(b2){
+                        b2.Activate([this]);
+                    }
+                    this.litTime = 0;
+                    this.colored = true;
+                    this.children[1].visible = false;
+                    this.children[2].visible = true;
+                }
+                this.litTime++;
+                this.Activated = false;
+            }
+            Activate(src){
+                if(!src){src = [];}
+                let newsrc = [...src];
+                newsrc.push(this);
+                let b1 = Game.getblock(this.position.x / 64 + this.targetx, this.position.y / 64 + this.targety);
+                let b2 = Game.getblock(this.position.x / 64 - this.targetx, this.position.y / 64 - this.targety);
+
+                if((src[src.length - 1] == b1 && !src.includes(b2)) || src.length == 0){
+                    if(b2){
+                        this.Activated = true;
+                    }
                 }
             }
             Rotate(){
@@ -1100,6 +1178,7 @@ class Game{
                 this.children[0].addChild(new Seat(256, 384));
                 this.children[0].addChild(new Delayer(256, 512));
                 this.children[0].addChild(new Diode(256, 640));
+                this.children[0].addChild(new NotDiode(256, 768));
             }
             Update(){
                 if(this.visible && Game.MBsPressed[0] && !Game.getblock(Math.round(Game.worldContainer.mousePos.x / 64), Math.round(Game.worldContainer.mousePos.y / 64))){
@@ -1200,6 +1279,9 @@ class Game{
         Game.app.stage.sortableChildren = true;
 
         Game.blocks = [];
+
+        Game.timeDivider = 1;
+        Game.timePause = false;
         
         Game.storeblock = (x, y, block) => {
             if(!Game.blocks[x]){
@@ -1309,9 +1391,7 @@ class Game{
             Game.storeblock(block.position.x / 64, block.position.y / 64, block);
         }
 
-        Game.elapsed = 0;
-
-        Game.timescale = 1;
+        Game.frames = 0;
 
         Game.app.stage.addChild(new PIXI.Graphics()); //World container
         Game.app.stage.addChild(new PIXI.Graphics()); //UI container
@@ -1359,12 +1439,15 @@ class Game{
             Game.uiContainer.mousePos.x = mouseglobal.x;
             Game.uiContainer.mousePos.y = mouseglobal.y;
 
-            Game.elapsed += dif;
+            Game.frames++;
 
             Game.app.stage.children.forEach((room) => {
                 if(room.visible){
                     room.children.forEach((thing) => {
                         thing.Update(dif);
+                        if(!Game.timePause && Game.frames % (3 * Game.timeDivider) == 0 && thing.type == "block"){
+                            thing.BlockUpdate();
+                        }
                     });
                 }
             })
