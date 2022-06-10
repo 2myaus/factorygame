@@ -892,7 +892,7 @@ class Game{
                 this.litTime = 0;
                 this.colored = false;
 
-                this.activationtime = 25;
+                this.activationtime = 1;
                 this.activatingtimer = 0;
                 this.activatingsrc = null;
             }
@@ -1280,7 +1280,7 @@ class Game{
 
         Game.blocks = [];
 
-        Game.timeDivider = 1;
+        Game.timeDivider = 3;
         Game.timePause = false;
         
         Game.storeblock = (x, y, block) => {
@@ -1445,7 +1445,7 @@ class Game{
                 if(room.visible){
                     room.children.forEach((thing) => {
                         thing.Update(dif);
-                        if(!Game.timePause && Game.frames % (3 * Game.timeDivider) == 0 && thing.type == "block"){
+                        if(!Game.timePause && (Game.frames % Game.timeDivider) == 0 && thing.type == "block"){
                             thing.BlockUpdate();
                         }
                     });
